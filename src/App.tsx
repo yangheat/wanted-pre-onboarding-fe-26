@@ -1,26 +1,32 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { Fragment, useEffect, useState } from 'react'
+import { getMockData } from './api/products'
+import './App.css'
+import { MockData } from './types/mock'
+
+const PER_PAGE = 10
 
 function App() {
+  const [products, setProducts] = useState<MockData[]>([])
+
+  useEffect(() => {
+    getMockData(PER_PAGE).then((response) => {
+      setProducts(response.datas)
+    })
+  }, [])
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    <>
+      {products.map((product, index) => (
+        <Fragment key={index}>
+          {Object.entries(product).map(([key, value]) => (
+            <p key={key}>
+              {key}: {value}
+            </p>
+          ))}
+          <hr />
+        </Fragment>
+      ))}
+    </>
+  )
 }
 
-export default App;
+export default App
