@@ -1,30 +1,50 @@
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getMockData } from './api/products'
 import './App.css'
 import { MockData } from './types/mock'
 
-const PER_PAGE = 10
+function TotalPrice({ totalPrice }: { totalPrice: number}) {
+  return <p>TotalPrice: { totalPrice }</p>
+}
+
+function ProductList({ products }: { products: MockData[]}) {
+  return (
+    <>
+      <table>
+        <tbody>
+            {products.map((product, index) => (
+              <tr key={index}>
+                {Object.entries(product).map(([key, value]) => (
+                  <td key={index + key + value}>{key}: {value}</td>
+                ))}
+              </tr>
+            ))}
+        </tbody>
+      </table>
+      
+    </>
+  )
+}
 
 function App() {
   const [products, setProducts] = useState<MockData[]>([])
+  const [totalPrice, setTotalPrice] = useState(0)
+  const [pageNum, setpageNum] = useState(0)
 
   useEffect(() => {
-    getMockData(PER_PAGE).then((response) => {
+    getMockData(pageNum).then((response) => {
+      let price = 0
+      response.datas.forEach((data) => {
+        price += data.price
+      })
+      setTotalPrice(price)
       setProducts(response.datas)
     })
   }, [])
   return (
     <>
-      {products.map((product, index) => (
-        <Fragment key={index}>
-          {Object.entries(product).map(([key, value]) => (
-            <p key={key}>
-              {key}: {value}
-            </p>
-          ))}
-          <hr />
-        </Fragment>
-      ))}
+      <TotalPrice totalPrice={totalPrice}/>
+      <ProductList products={products}/>
     </>
   )
 }
