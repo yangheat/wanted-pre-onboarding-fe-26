@@ -1,4 +1,21 @@
-table, tr, th, td {
+table,
+tr,
+th,
+td {
   border: 1px solid;
   border-collapse: collapse;
+  padding: 1rem;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
+
+table {
+  height: 100vw;
+}
+header {
+  position: sticky;
 }
