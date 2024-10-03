@@ -1,10 +1,31 @@
-import React, { Fragment, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { getMockData } from './api/products'
 import './App.css'
 import { MockData } from './types/mock'
 
 function TotalPrice({ totalPrice }: { totalPrice: number }) {
-  return <p>TotalPrice: {totalPrice}</p>
+  const formattedPrice = new Intl.NumberFormat('ko-KR').format(totalPrice)
+  return (
+    <header>
+      <p>TotalPrice: {formattedPrice}</p>
+    </header>
+  )
+}
+
+function ProductItem({ products }: { products: MockData[] }) {
+  return (
+    <table>
+      <tbody>
+        {products.map((product, index) => (
+          <tr key={index}>
+            {Object.entries(product).map(([key, value]) => (
+              <td key={`${key}-${value}`}>{value}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
 }
 
 function ProductList({
@@ -16,53 +37,46 @@ function ProductList({
   setPageNum: React.Dispatch<React.SetStateAction<number>>
   isEnd: boolean
 }) {
-  const [load, setLoad] = useState(false)
-  const ref = useRef(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const observerRef = useRef(null)
+
+  const handleInterSection = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      if (entries[0].isIntersecting && products.length > 0 && !isEnd) {
+        setIsLoading(true)
+        setPageNum((curr) => curr + 1)
+      }
+    },
+    [products.length, isEnd, setPageNum]
+  )
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && products.length > 0) {
-          console.log('- observer')
-          console.log('products:', products)
-          console.log('isEnd:', isEnd)
-          if (isEnd === true) {
-            setLoad(false)
-            return
-          }
+    const observer = new IntersectionObserver(handleInterSection, {
+      threshold: 0.9
+    })
+    const currntRef = observerRef.current
 
-          setLoad(true)
-          setPageNum((curr) => curr + 1)
-        }
-      },
-      { threshold: 0.9 }
-    )
-
-    if (ref.current) {
-      observer.observe(ref.current)
+    if (currntRef) {
+      observer.observe(currntRef)
     }
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current)
+      if (currntRef) {
+        observer.unobserve(currntRef)
       }
     }
-  }, [products, isEnd])
+  }, [handleInterSection])
+
+  useEffect(() => {
+    if (isEnd) {
+      setIsLoading(false)
+    }
+  }, [isEnd])
+
   return (
     <>
-      <table>
-        <tbody>
-          {products.map((product, index) => (
-            <tr key={index}>
-              <td>{index}</td>
-              {Object.entries(product).map(([key, value]) => (
-                <td key={index + key + value}>{value}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div ref={ref}>{load ? 'loading...' : ''}</div>
+      <ProductItem products={products} />
+      <div ref={observerRef}>{isLoading ? 'loading...' : ''}</div>
     </>
   )
 }
@@ -73,32 +87,32 @@ function App() {
   const [totalPrice, setTotalPrice] = useState(0)
   const [pageNum, setPageNum] = useState(0)
 
-  useEffect(() => {
-    getMockData(pageNum).then((response) => {
+  const fetchProducts = useCallback(async (page: number) => {
+    try {
+      const response = await getMockData(page)
       const { datas, isEnd } = response
 
-      if (datas.length === 0 && isEnd === true) {
+      if (datas.length === 0 && isEnd) {
         return
       }
 
-      setProducts([...products, ...datas])
+      setProducts((prev) => [...prev, ...datas])
 
-      let price = 0
-      datas.forEach((data) => {
-        price += data.price
-      })
-      setTotalPrice(totalPrice + price)
-
+      const newPrice = datas.reduce((sum, data) => sum + data.price, 0)
+      setTotalPrice((prev) => prev + newPrice)
       setIsEnd(isEnd)
-    })
-  }, [pageNum])
+    } catch (error) {
+      console.error('product fetch error')
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchProducts(pageNum)
+  }, [pageNum, fetchProducts])
 
   return (
     <>
-      <header>
-        <TotalPrice totalPrice={totalPrice} />
-      </header>
-
+      <TotalPrice totalPrice={totalPrice} />
       <ProductList products={products} setPageNum={setPageNum} isEnd={isEnd} />
     </>
   )
