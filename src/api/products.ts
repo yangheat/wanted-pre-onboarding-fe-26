@@ -1,7 +1,7 @@
 import { MOCK_DATA } from '../data/product'
 import { MockData } from '../types/mock'
 
-const PER_PAGE = 10
+const PER_PAGE = 100
 
 // 페이지는 1부터 시작함
 export const getMockData = (

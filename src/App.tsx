@@ -22,7 +22,15 @@ function ProductList({
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && isEnd === false) {
+        if (entries[0].isIntersecting && products.length > 0) {
+          console.log('- observer')
+          console.log('products:', products)
+          console.log('isEnd:', isEnd)
+          if (isEnd === true) {
+            setLoad(false)
+            return
+          }
+
           setLoad(true)
           setPageNum((curr) => curr + 1)
         }
@@ -39,13 +47,14 @@ function ProductList({
         observer.unobserve(ref.current)
       }
     }
-  }, [])
+  }, [products, isEnd])
   return (
-    <section className="product-list-container">
+    <>
       <table>
         <tbody>
           {products.map((product, index) => (
             <tr key={index}>
+              <td>{index}</td>
               {Object.entries(product).map(([key, value]) => (
                 <td key={index + key + value}>{value}</td>
               ))}
@@ -54,7 +63,7 @@ function ProductList({
         </tbody>
       </table>
       <div ref={ref}>{load ? 'loading...' : ''}</div>
-    </section>
+    </>
   )
 }
 
@@ -64,20 +73,23 @@ function App() {
   const [totalPrice, setTotalPrice] = useState(0)
   const [pageNum, setPageNum] = useState(0)
 
-  let temp: MockData[] = []
-
   useEffect(() => {
     getMockData(pageNum).then((response) => {
-      temp = response.datas
-      setProducts([...products, ...response.datas])
+      const { datas, isEnd } = response
+
+      if (datas.length === 0 && isEnd === true) {
+        return
+      }
+
+      setProducts([...products, ...datas])
 
       let price = 0
-      response.datas.forEach((data, index) => {
+      datas.forEach((data) => {
         price += data.price
       })
-      setTotalPrice((curr) => curr + price)
+      setTotalPrice(totalPrice + price)
 
-      setIsEnd(response.isEnd)
+      setIsEnd(isEnd)
     })
   }, [pageNum])
 
