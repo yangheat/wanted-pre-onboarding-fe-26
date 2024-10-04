@@ -3,6 +3,14 @@ import { getMockData } from './api/products'
 import './App.css'
 import { MockData } from './types/mock'
 
+const OBSERVER_THRESHOD = 0.9
+
+type TProductList = {
+  products: MockData[]
+  setPageNum: React.Dispatch<React.SetStateAction<number>>
+  isEnd: boolean
+}
+
 function TotalPrice({ totalPrice }: { totalPrice: number }) {
   const formattedPrice = new Intl.NumberFormat('ko-KR').format(totalPrice)
   return (
@@ -28,15 +36,7 @@ function ProductItem({ products }: { products: MockData[] }) {
   )
 }
 
-function ProductList({
-  products,
-  setPageNum,
-  isEnd
-}: {
-  products: MockData[]
-  setPageNum: React.Dispatch<React.SetStateAction<number>>
-  isEnd: boolean
-}) {
+function ProductList({ products, setPageNum, isEnd }: TProductList) {
   const [isLoading, setIsLoading] = useState(false)
   const observerRef = useRef(null)
 
@@ -52,7 +52,7 @@ function ProductList({
 
   useEffect(() => {
     const observer = new IntersectionObserver(handleInterSection, {
-      threshold: 0.9
+      threshold: OBSERVER_THRESHOD
     })
     const currntRef = observerRef.current
 
@@ -76,7 +76,7 @@ function ProductList({
   return (
     <>
       <ProductItem products={products} />
-      <div ref={observerRef}>{isLoading ? 'loading...' : ''}</div>
+      <div ref={observerRef}>{isLoading && 'loading...'}</div>
     </>
   )
 }
@@ -92,10 +92,6 @@ function App() {
       const response = await getMockData(page)
       const { datas, isEnd } = response
 
-      if (datas.length === 0 && isEnd) {
-        return
-      }
-
       setProducts((prev) => [...prev, ...datas])
 
       const newPrice = datas.reduce((sum, data) => sum + data.price, 0)
@@ -107,6 +103,9 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (isEnd) {
+      return
+    }
     fetchProducts(pageNum)
   }, [pageNum, fetchProducts])
 
